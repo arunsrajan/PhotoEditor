@@ -27,7 +27,7 @@ import com.arun.image.utils.ImageUtils;
 
 public class PhotoEditor {
 	public static void main(String[] args){
-		 ArrayList photoFrameUndoList=new ArrayList();
+		ArrayList photoFrameUndoList=new ArrayList();
 		ArrayList photoFrameRedoList=new ArrayList();
 		JFrame photoFrame=new JFrame();
 		Container contentPane=photoFrame.getContentPane();
