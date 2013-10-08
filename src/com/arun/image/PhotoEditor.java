@@ -437,7 +437,7 @@ class ImageEffectMenuItemListener implements ActionListener{
     		this.panel.repaint();
 		}
 		
-		else if(e.getActionCommand().equals("RotateImage")){
+		/*else if(e.getActionCommand().equals("RotateImage")){
 			if(photoFrameUndoList.size()==0){
 		    	Object[] options = { "OK", "CANCEL" };
 		    	JOptionPane.showOptionDialog(null, "Please select an image to apply effects", "Warning",
@@ -448,6 +448,33 @@ class ImageEffectMenuItemListener implements ActionListener{
 		    	return;
 		    }
 			BufferedImage transimg=(BufferedImage) new ImageUtils().RotateImage((BufferedImage)photoFrameUndoList.get(photoFrameUndoList.size()-1));
+    		photoFrameUndoList.add(transimg);
+    		this.panel.setBufferedImage(transimg);
+    		this.photoFrame.setBounds(this.photoFrame.getX(), this.photoFrame.getX(), transimg.getWidth(), transimg.getHeight());
+    		this.photoFrame.repaint();
+    		this.panel.repaint();
+		}*/
+		
+		else if(e.getActionCommand().equals("RotateImage")){
+			if(photoFrameUndoList.size()==0){
+		    	Object[] options = { "OK", "CANCEL" };
+		    	JOptionPane.showOptionDialog(null, "Please select an image to apply effects", "Warning",
+
+		    	        JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE,
+
+		    	        null, options, options[0]);
+		    	return;
+		    }
+			BufferedImage transimg = null;
+			try {
+				transimg=new ImageUtils().clusterImages();
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			} catch (CloneNotSupportedException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
     		photoFrameUndoList.add(transimg);
     		this.panel.setBufferedImage(transimg);
     		this.photoFrame.setBounds(this.photoFrame.getX(), this.photoFrame.getX(), transimg.getWidth(), transimg.getHeight());
@@ -468,7 +495,7 @@ class ImageEffectMenuItemListener implements ActionListener{
 	        JSlider theSlider = (JSlider) changeEvent.getSource();
 	        if (!theSlider.getValueIsAdjusting()) {
 	          optionPane.setInputValue(new Integer(theSlider.getValue()));
-	        }
+	        }  
 	      }
 	    };
 	    slider.addChangeListener(changeListener);
