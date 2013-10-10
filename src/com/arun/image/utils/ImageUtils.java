@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Random;
 import java.util.Vector;
 
 import javax.imageio.ImageIO;
@@ -640,6 +641,38 @@ public BufferedImage GlassImage(BufferedImage image){
 	    colr.green=((color>>8)&255);
 	    colr.blue=(color&255);
 	    return colr;
+	}
+	
+	public BufferedImage segmentImage(BufferedImage image,int numberofseg){
+		image=GrayScale(image);
+		BufferedImage transformedImage=new BufferedImage(image.getWidth(),image.getHeight(),BufferedImage.TYPE_INT_ARGB);
+		int red=0,green=0,blue=0,alpha=0;
+		Color segcolors[]=new Color[numberofseg];
+		Color color;
+		Random rand=new Random(System.currentTimeMillis());
+		for(int colorcount=0;colorcount<numberofseg;colorcount++){
+			segcolors[colorcount]=new Color();
+			segcolors[colorcount].red=rand.nextInt(256);;
+			segcolors[colorcount].blue=rand.nextInt(256);
+			segcolors[colorcount].green=rand.nextInt(256);
+			segcolors[colorcount].alpha=0xff;
+		}
+		float numberindex=(float) (256.0/numberofseg);
+		float rangeindex;
+		for(int i=0;i<image.getWidth();i++){
+			for(int j=0;j<image.getHeight();j++){
+				color=obtainColor(image,i, j);
+				rangeindex=color.red/numberindex;
+				//System.out.print(color.red+" "+color.green+" "+color.blue+" ");
+				red=segcolors[(int)rangeindex].red;
+				green= segcolors[(int)rangeindex].green;
+				blue= segcolors[(int)rangeindex].blue;
+				alpha= color.alpha;
+				//System.out.println(red+" "+green+" "+blue);
+				transformedImage.setRGB(i,j, ((alpha<<24)|(red<<16)|(green<<8)|blue));
+			}
+		}
+		return transformedImage;
 	}
 	
 	public BufferedImage clusterImages() throws IOException, CloneNotSupportedException{

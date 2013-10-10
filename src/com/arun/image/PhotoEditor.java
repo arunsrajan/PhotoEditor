@@ -121,6 +121,10 @@ public class PhotoEditor {
 		rotateItem.addActionListener(imageEffectItemListener);
 		effectsMenu.add(rotateItem);
 		
+		JMenuItem segmentItem=new JMenuItem("SegmentImage");
+		segmentItem.addActionListener(imageEffectItemListener);
+		effectsMenu.add(segmentItem);
+		
 		
 		menubar.add(fileMenu);
 		menubar.add(editMenu);
@@ -481,7 +485,33 @@ class ImageEffectMenuItemListener implements ActionListener{
     		this.photoFrame.repaint();
     		this.panel.repaint();
 		}
-		
+		else if(e.getActionCommand().equals("SegmentImage")){
+			if(photoFrameUndoList.size()==0){
+		    	Object[] options = { "OK", "CANCEL" };
+		    	JOptionPane.showOptionDialog(null, "Please select an image to apply effects", "Warning",
+
+		    	        JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE,
+
+		    	        null, options, options[0]);
+		    	return;
+		    }
+			
+			JOptionPane optionPane = new JOptionPane();
+			JSlider slider = getSlider(optionPane);
+		    optionPane.setMessage(new Object[] { "Select a value: ", slider });
+		    optionPane.setMessageType(JOptionPane.QUESTION_MESSAGE);
+		    optionPane.setOptionType(JOptionPane.OK_CANCEL_OPTION);
+		    JDialog dialog = optionPane.createDialog(this.photoFrame, "Number of Segments");
+		    dialog.setVisible(true);
+		    int numseg=(int) optionPane.getInputValue();
+			BufferedImage transimg = null;
+			transimg=new ImageUtils().segmentImage((BufferedImage)photoFrameUndoList.get(photoFrameUndoList.size()-1),numseg);
+    		photoFrameUndoList.add(transimg);
+    		this.panel.setBufferedImage(transimg);
+    		this.photoFrame.setBounds(this.photoFrame.getX(), this.photoFrame.getX(), transimg.getWidth(), transimg.getHeight());
+    		this.photoFrame.repaint();
+    		this.panel.repaint();
+		}
 	}
 	
 	static JSlider getSlider(final JOptionPane optionPane) {
