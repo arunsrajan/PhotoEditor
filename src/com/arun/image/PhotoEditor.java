@@ -23,6 +23,14 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
+import org.apache.commons.vfs2.FileChangeEvent;
+import org.apache.commons.vfs2.FileListener;
+import org.apache.commons.vfs2.FileObject;
+import org.apache.commons.vfs2.FileSystemException;
+import org.apache.commons.vfs2.FileSystemManager;
+import org.apache.commons.vfs2.VFS;
+import org.apache.commons.vfs2.impl.DefaultFileMonitor;
+
 import com.arun.image.utils.ImageUtils;
 
 public class PhotoEditor {
@@ -121,19 +129,32 @@ public class PhotoEditor {
 		rotateItem.addActionListener(imageEffectItemListener);
 		effectsMenu.add(rotateItem);
 		
-		JMenuItem segmentItem=new JMenuItem("SegmentImage");
-		segmentItem.addActionListener(imageEffectItemListener);
-		effectsMenu.add(segmentItem);
-		
 		
 		menubar.add(fileMenu);
 		menubar.add(editMenu);
 		menubar.add(effectsMenu);
 		photoFrame.setBounds(10,10,200,200);
 		photoFrame.setVisible(true);
+		FileSystemManager fsManager = null;
+		try {
+			fsManager = VFS.getManager();
+		} catch (FileSystemException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		DefaultFileMonitor fm = new DefaultFileMonitor(imageEffectItemListener);
+		FileObject listendir = null;
+		try {
+			listendir = fsManager.resolveFile("d:\\images");
+		} catch (FileSystemException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		fm.setRecursive(true); 
+		fm.addFile(listendir); 
+		fm.setDelay(3000);
+		fm.start();
 	}
-	
-	
 }
 class FileMenuItemListener implements ActionListener{
 
@@ -193,7 +214,7 @@ class FileMenuItemListener implements ActionListener{
 	}
 }
 
-class ImageEffectMenuItemListener implements ActionListener{
+class ImageEffectMenuItemListener implements ActionListener,FileListener{
 
 	JFrame photoFrame;
 	PhotoImagePanel panel;
@@ -485,33 +506,7 @@ class ImageEffectMenuItemListener implements ActionListener{
     		this.photoFrame.repaint();
     		this.panel.repaint();
 		}
-		else if(e.getActionCommand().equals("SegmentImage")){
-			if(photoFrameUndoList.size()==0){
-		    	Object[] options = { "OK", "CANCEL" };
-		    	JOptionPane.showOptionDialog(null, "Please select an image to apply effects", "Warning",
-
-		    	        JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE,
-
-		    	        null, options, options[0]);
-		    	return;
-		    }
-			
-			JOptionPane optionPane = new JOptionPane();
-			JSlider slider = getSlider(optionPane);
-		    optionPane.setMessage(new Object[] { "Select a value: ", slider });
-		    optionPane.setMessageType(JOptionPane.QUESTION_MESSAGE);
-		    optionPane.setOptionType(JOptionPane.OK_CANCEL_OPTION);
-		    JDialog dialog = optionPane.createDialog(this.photoFrame, "Number of Segments");
-		    dialog.setVisible(true);
-		    int numseg=(int) optionPane.getInputValue();
-			BufferedImage transimg = null;
-			transimg=new ImageUtils().segmentImage((BufferedImage)photoFrameUndoList.get(photoFrameUndoList.size()-1),numseg);
-    		photoFrameUndoList.add(transimg);
-    		this.panel.setBufferedImage(transimg);
-    		this.photoFrame.setBounds(this.photoFrame.getX(), this.photoFrame.getX(), transimg.getWidth(), transimg.getHeight());
-    		this.photoFrame.repaint();
-    		this.panel.repaint();
-		}
+		
 	}
 	
 	static JSlider getSlider(final JOptionPane optionPane) {
@@ -531,6 +526,157 @@ class ImageEffectMenuItemListener implements ActionListener{
 	    slider.addChangeListener(changeListener);
 	    return slider;
 	  }
+	@Override
+	public void fileChanged(FileChangeEvent arg0) throws Exception {
+		FileObject baseFile=arg0.getFile();
+			BufferedImage transimg=(BufferedImage) new ImageUtils().SmoothMeanImage((BufferedImage)ImageIO.read(baseFile.getURL()));
+	    	photoFrameUndoList.add(transimg);
+	    	this.panel.setBufferedImage(transimg);
+	    	this.photoFrame.setBounds(this.photoFrame.getX(), this.photoFrame.getX(), transimg.getWidth(), transimg.getHeight());
+	    	this.photoFrame.repaint();
+	    	this.panel.repaint();
+		
+	}
+	@Override
+	public void fileCreated(FileChangeEvent arg0) throws Exception {
+		FileObject baseFile=arg0.getFile();
+		String fileName=baseFile.getName().getBaseName();
+		if(fileName.startsWith("Smooth")){
+			BufferedImage transimg=(BufferedImage) new ImageUtils().SmoothMeanImage((BufferedImage)ImageIO.read(baseFile.getURL()));
+	    	photoFrameUndoList.add(transimg);
+	    	this.panel.setBufferedImage(transimg);
+	    	this.photoFrame.setBounds(this.photoFrame.getX(), this.photoFrame.getX(), transimg.getWidth(), transimg.getHeight());
+	    	this.photoFrame.repaint();
+	    	this.panel.repaint();
+		}
+		else if(fileName.startsWith("GrayScale")){
+			BufferedImage transimg=(BufferedImage) new ImageUtils().GrayScale((BufferedImage)ImageIO.read(baseFile.getURL()));
+	    	photoFrameUndoList.add(transimg);
+	    	this.panel.setBufferedImage(transimg);
+	    	this.photoFrame.setBounds(this.photoFrame.getX(), this.photoFrame.getX(), transimg.getWidth(), transimg.getHeight());
+	    	this.photoFrame.repaint();
+	    	this.panel.repaint();
+		}
+		else if(fileName.startsWith("Glass")){
+			BufferedImage transimg=(BufferedImage) new ImageUtils().GlassImage((BufferedImage)ImageIO.read(baseFile.getURL()));
+	    	photoFrameUndoList.add(transimg);
+	    	this.panel.setBufferedImage(transimg);
+	    	this.photoFrame.setBounds(this.photoFrame.getX(), this.photoFrame.getX(), transimg.getWidth(), transimg.getHeight());
+	    	this.photoFrame.repaint();
+	    	this.panel.repaint();
+		}
+		else if(fileName.startsWith("EdgeDetect"))
+		{
+			BufferedImage transimg=(BufferedImage) new ImageUtils().EdgeDetect((BufferedImage)ImageIO.read(baseFile.getURL()));
+    		photoFrameUndoList.add(transimg);
+    		this.panel.setBufferedImage(transimg);
+    		this.photoFrame.setBounds(this.photoFrame.getX(), this.photoFrame.getX(), transimg.getWidth(), transimg.getHeight());
+    		this.photoFrame.repaint();
+    		this.panel.repaint();
+		}
+		else if(fileName.startsWith("Negative")){
+			BufferedImage transimg=(BufferedImage) new ImageUtils().Negative((BufferedImage)ImageIO.read(baseFile.getURL()));
+    		photoFrameUndoList.add(transimg);
+    		this.panel.setBufferedImage(transimg);
+    		this.photoFrame.setBounds(this.photoFrame.getX(), this.photoFrame.getX(), transimg.getWidth(), transimg.getHeight());
+    		this.photoFrame.repaint();
+    		this.panel.repaint();
+		}
+		
+		else if(fileName.startsWith("Sharp")){
+			
+			BufferedImage transimg=(BufferedImage) new ImageUtils().SharpImage((BufferedImage)ImageIO.read(baseFile.getURL()));
+    		photoFrameUndoList.add(transimg);
+    		this.panel.setBufferedImage(transimg);
+    		this.photoFrame.setBounds(this.photoFrame.getX(), this.photoFrame.getX(), transimg.getWidth(), transimg.getHeight());
+    		this.photoFrame.repaint();
+    		this.panel.repaint();
+		}
+		
+		else if(fileName.startsWith("EdgeDetect")){
+			
+			BufferedImage transimg=(BufferedImage) new ImageUtils().EdgeDetect((BufferedImage)ImageIO.read(baseFile.getURL()));
+    		photoFrameUndoList.add(transimg);
+    		this.panel.setBufferedImage(transimg);
+    		this.photoFrame.setBounds(this.photoFrame.getX(), this.photoFrame.getX(), transimg.getWidth(), transimg.getHeight());
+    		this.photoFrame.repaint();
+    		this.panel.repaint();
+		}
+		else if(fileName.startsWith("Glass")){
+			
+			BufferedImage transimg=(BufferedImage) new ImageUtils().GlassImage((BufferedImage)ImageIO.read(baseFile.getURL()));
+    		photoFrameUndoList.add(transimg);
+    		this.panel.setBufferedImage(transimg);
+    		this.photoFrame.setBounds(this.photoFrame.getX(), this.photoFrame.getX(), transimg.getWidth(), transimg.getHeight());
+    		this.photoFrame.repaint();
+    		this.panel.repaint();
+		}
+		else if(fileName.startsWith("Warp1")){
+			
+			BufferedImage transimg=(BufferedImage) new ImageUtils().Warp1Image((BufferedImage)ImageIO.read(baseFile.getURL()));
+    		photoFrameUndoList.add(transimg);
+    		this.panel.setBufferedImage(transimg);
+    		this.photoFrame.setBounds(this.photoFrame.getX(), this.photoFrame.getX(), transimg.getWidth(), transimg.getHeight());
+    		this.photoFrame.repaint();
+    		this.panel.repaint();
+		}
+		else if(fileName.startsWith("Warp2")){
+			
+			BufferedImage transimg=(BufferedImage) new ImageUtils().Warp2Image((BufferedImage)ImageIO.read(baseFile.getURL()));
+    		photoFrameUndoList.add(transimg);
+    		this.panel.setBufferedImage(transimg);
+    		this.photoFrame.setBounds(this.photoFrame.getX(), this.photoFrame.getX(), transimg.getWidth(), transimg.getHeight());
+    		this.photoFrame.repaint();
+    		this.panel.repaint();
+		}
+		else if(fileName.startsWith("RG")){
+			
+			BufferedImage transimg=(BufferedImage) new ImageUtils().InterchangeColorImage((BufferedImage)ImageIO.read(baseFile.getURL()),ImageUtils.INTERCHANGERG);
+    		photoFrameUndoList.add(transimg);
+    		this.panel.setBufferedImage(transimg);
+    		this.photoFrame.setBounds(this.photoFrame.getX(), this.photoFrame.getX(), transimg.getWidth(), transimg.getHeight());
+    		this.photoFrame.repaint();
+    		this.panel.repaint();
+		}
+		else if(fileName.startsWith("GB")){
+			
+			BufferedImage transimg=(BufferedImage) new ImageUtils().InterchangeColorImage((BufferedImage)ImageIO.read(baseFile.getURL()),ImageUtils.INTERCHANGEGB);
+    		photoFrameUndoList.add(transimg);
+    		this.panel.setBufferedImage(transimg);
+    		this.photoFrame.setBounds(this.photoFrame.getX(), this.photoFrame.getX(), transimg.getWidth(), transimg.getHeight());
+    		this.photoFrame.repaint();
+    		this.panel.repaint();
+		}
+		else if(fileName.startsWith("RB")){
+			BufferedImage transimg=(BufferedImage) new ImageUtils().InterchangeColorImage((BufferedImage)ImageIO.read(baseFile.getURL()),ImageUtils.INTERCHANGERB);
+    		photoFrameUndoList.add(transimg);
+    		this.panel.setBufferedImage(transimg);
+    		this.photoFrame.setBounds(this.photoFrame.getX(), this.photoFrame.getX(), transimg.getWidth(), transimg.getHeight());
+    		this.photoFrame.repaint();
+    		this.panel.repaint();
+		}
+		else if(fileName.startsWith("Alpha")){
+			JOptionPane optionPane = new JOptionPane();
+			JSlider slider = getSlider(optionPane);
+		    optionPane.setMessage(new Object[] { "Select a value: ", slider });
+		    optionPane.setMessageType(JOptionPane.QUESTION_MESSAGE);
+		    optionPane.setOptionType(JOptionPane.OK_CANCEL_OPTION);
+		    JDialog dialog = optionPane.createDialog(this.photoFrame, "Alpha");
+		    dialog.setVisible(true);
+		    int alpha=(int) optionPane.getInputValue();
+			BufferedImage transimg=(BufferedImage) new ImageUtils().AlphaImage((BufferedImage)ImageIO.read(baseFile.getURL()),alpha);
+    		photoFrameUndoList.add(transimg);
+    		this.panel.setBufferedImage(transimg);
+    		this.photoFrame.setBounds(this.photoFrame.getX(), this.photoFrame.getX(), transimg.getWidth(), transimg.getHeight());
+    		this.photoFrame.repaint();
+    		this.panel.repaint();
+		}
+	}
+	@Override
+	public void fileDeleted(FileChangeEvent arg0) throws Exception {
+		// TODO Auto-generated method stub
+		
+	}
 }
 
 
